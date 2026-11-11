@@ -1,0 +1,19 @@
+Alice Martin
+alice.martin@example.com | Lyon, France
+
+EDUCATION
+MSc Computer Science, INSA Lyon (2023-2025)
+BSc Mathematics, Universite Lyon 1 (2020-2023)
+
+EXPERIENCE
+Data Science Intern, Acme Analytics (Summer 2024): built churn models in Python and scikit-learn.
+Teaching assistant, INSA Lyon (2023-2024): Python and SQL labs.
+
+SKILLS
+Python, SQL, scikit-learn, pandas, Git, Docker
+
+LANGUAGES
+French (native), English (C1)
+
+TARGET
+Data science or machine learning internship, Lyon or remote.

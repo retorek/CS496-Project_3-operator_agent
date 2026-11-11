@@ -1,6 +1,7 @@
-CLAUDE.md
 .env
 __pycache__/
 .pytest_cache/
+*.db
 .venv/
-logs/*.jsonl
+*.log
+logs/

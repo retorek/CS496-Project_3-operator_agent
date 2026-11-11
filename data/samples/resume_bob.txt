@@ -1,0 +1,18 @@
+Bob Karim
+bob.karim@example.com | Tunis, Tunisia
+
+EDUCATION
+Engineering degree, ENIT (2021-2026)
+
+EXPERIENCE
+Backend Intern, Nova Soft (Summer 2025): REST APIs with FastAPI and PostgreSQL.
+Open-source contributor: small fixes in a Python web framework.
+
+SKILLS
+Python, FastAPI, PostgreSQL, Docker, TypeScript, React
+
+LANGUAGES
+Arabic (native), French (C1), English (B2)
+
+TARGET
+Backend or full-stack software engineering internship, Europe or remote.
