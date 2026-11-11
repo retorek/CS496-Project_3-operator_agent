@@ -19,6 +19,7 @@ class WorkflowState(TypedDict, total=False):
     current_batch: list[RankedOffer]      # stage 6
     selected_offer_ids: list[str]         # stage 7: queue of offers to apply to
     next_action: str                      # stage 7: "next" | "find_others" | "done" (after queue)
+    route: str                            # stage 7: where the graph goes next
     current_offer: Offer | None           # offer being processed in 8-10
     cover_letters: dict[str, str]         # stage 8: offer_id -> letter
     review_enabled: bool                  # stage 9 on/off
@@ -34,7 +35,7 @@ class WorkflowState(TypedDict, total=False):
 def initial_state(review_enabled: bool = True) -> WorkflowState:
     return WorkflowState(
         resume_text="", profile=None, offers=[], quarantined=[], ranked=[],
-        batch_cursor=0, current_batch=[], selected_offer_ids=[], next_action="",
+        batch_cursor=0, current_batch=[], selected_offer_ids=[], next_action="", route="",
         current_offer=None, cover_letters={}, review_enabled=review_enabled,
         review_decision="", applications=[], applications_sent=0, steps=0,
         tokens_used=0, stop_reason=None, errors=[],

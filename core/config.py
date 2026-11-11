@@ -1,6 +1,11 @@
-"""Typed settings loaded from .env (and the environment)."""
-from pydantic import field_validator
+"""Typed settings loaded from .env, plus per-stage model config (config/models.yaml)."""
+from pathlib import Path
+
+import yaml
+from pydantic import BaseModel, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+MODELS_YAML = Path(__file__).resolve().parent.parent / "config" / "models.yaml"
 
 
 class ConfigError(RuntimeError):
@@ -39,15 +44,6 @@ def get_settings(dry: bool = False) -> Settings:
             "or run with --dry (no keys needed)."
         )
     return settings
-
-
-# --- Per-stage model configuration (config/models.yaml) ---
-from pathlib import Path  # noqa: E402
-
-import yaml  # noqa: E402
-from pydantic import BaseModel  # noqa: E402
-
-MODELS_YAML = Path(__file__).resolve().parent.parent / "config" / "models.yaml"
 
 
 class ModelSpec(BaseModel):
