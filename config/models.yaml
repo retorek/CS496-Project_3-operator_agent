@@ -1,0 +1,6 @@
+# Model per stage. Replace the placeholders. Only these stages call a model.
+profile:      {model: TODO-model-name, temperature: 0.0}
+find_offers:  {model: TODO-model-name, temperature: 0.0}
+security:     {model: TODO-model-name, temperature: 0.0}
+rank:         {model: TODO-model-name, temperature: 0.0}
+cover_letter: {model: TODO-model-name, temperature: 0.7}

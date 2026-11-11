@@ -39,3 +39,27 @@ def get_settings(dry: bool = False) -> Settings:
             "or run with --dry (no keys needed)."
         )
     return settings
+
+
+# --- Per-stage model configuration (config/models.yaml) ---
+from pathlib import Path  # noqa: E402
+
+import yaml  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
+
+MODELS_YAML = Path(__file__).resolve().parent.parent / "config" / "models.yaml"
+
+
+class ModelSpec(BaseModel):
+    model: str
+    temperature: float = 0.0
+
+
+def load_model_config(path: Path = MODELS_YAML) -> dict[str, ModelSpec]:
+    """Stage name -> ModelSpec. The only place model names are read."""
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return {stage: ModelSpec(**spec) for stage, spec in raw.items()}
+
+
+def get_model_spec(stage: str) -> ModelSpec:
+    return load_model_config()[stage]
