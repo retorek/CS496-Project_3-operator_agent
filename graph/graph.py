@@ -14,8 +14,11 @@ from langgraph.graph import END, START, StateGraph
 
 from core.config import Settings
 from core.state import WorkflowState
-from graph.nodes import (apply, cover_letter, find_offers, profile, rank, review,
-                         security, show_batch, upload, user_decides)
+from graph.nodes import (S1_upload as upload, S2_profile as profile,
+                         S3_find_offers as find_offers, S4_security as security,
+                         S5_rank as rank, S6_show_batch as show_batch,
+                         S7_user_decides as user_decides, S8_cover_letter as cover_letter,
+                         S9_review as review, S10_apply as apply)
 
 STAGES = {
     "upload": upload, "profile": profile, "find_offers": find_offers, "security": security,

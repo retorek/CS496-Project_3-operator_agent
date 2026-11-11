@@ -75,20 +75,20 @@
 
 ## `graph/nodes/`
 
-Each file exposes `node(state) -> dict`, a partial update of the workflow state.
+Files are named `S<stage number>_<name>.py`. Each exposes `node(state) -> dict`, a partial update of the workflow state.
 
 | File | Step |
 |---|---|
-| `upload.py` | 1. Read the uploaded resume. |
-| `profile.py` | 2. Build a structured profile. |
-| `find_offers.py` | 3. Find new offers, skipping those already seen. |
-| `security.py` | 4. Quarantine unsafe offers. |
-| `rank.py` | 5. Score and rank safe offers. |
-| `show_batch.py` | 6. Pick the next batch of offers to show. |
-| `user_decides.py` | 7. Pause for the user's choices and the next action. |
-| `cover_letter.py` | 8. Write a cover letter from resume facts. |
-| `review.py` | 9. Optional pause to confirm, edit or cancel. |
-| `apply.py` | 10. Send the application to the test inbox and update the tracker. |
+| `S1_upload.py` | 1. Read the uploaded resume. |
+| `S2_profile.py` | 2. Build a structured profile. |
+| `S3_find_offers.py` | 3. Find new offers, skipping those already seen. |
+| `S4_security.py` | 4. Quarantine unsafe offers. |
+| `S5_rank.py` | 5. Score and rank safe offers. |
+| `S6_show_batch.py` | 6. Pick the next batch of offers to show. |
+| `S7_user_decides.py` | 7. Pause for the user's choices and the next action. |
+| `S8_cover_letter.py` | 8. Write a cover letter from resume facts. |
+| `S9_review.py` | 9. Optional pause to confirm, edit or cancel. |
+| `S10_apply.py` | 10. Send the application to the test inbox and update the tracker. |
 
 ## `services/`
 
