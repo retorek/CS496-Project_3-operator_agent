@@ -1,0 +1,4 @@
+pydantic>=2
+requests
+pytest
+langgraph>=1.0,<2

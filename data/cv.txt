@@ -1,0 +1,4 @@
+Sample Student - Computer Science, 3rd year
+Skills: Python, SQL, Git, FastAPI, pandas, Docker basics, Linux
+Projects: REST API for a library system (FastAPI + SQLite); sales dashboard with pandas.
+Languages: French, English
