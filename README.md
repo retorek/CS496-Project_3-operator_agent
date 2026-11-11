@@ -1,62 +1,57 @@
-# Internship application assistant
+# Internship Application Assistant
 
-Reads a resume, finds and ranks internship offers, drafts cover letters, and applies
-**only after the user approves**. Applications go to a TEST inbox, never to the employer.
-This repo is currently a **skeleton**: every stage is a stub returning sample data.
+An assistant that helps you apply to internships. You upload your resume; it builds a
+profile, finds and ranks matching offers, and drafts a cover letter for each offer you
+pick. **Nothing is sent without your approval**, and applications go to a test inbox,
+never to the employer.
 
-## Setup
+## How it works
+
+1. **Upload** your resume.
+2. **Profile**: your skills, experience, education and target roles are extracted.
+3. **Find offers**: new offers are collected from job websites; ones already seen are skipped.
+4. **Security check**: offers containing prompt injection, suspicious links or requests for
+   personal data are quarantined.
+5. **Rank**: safe offers get a score and a short reason.
+6. **Browse**: offers are shown in small batches.
+7. **Decide**: mark each offer apply, decline or dismiss, then ask for the next batch,
+   look for other offers, or finish.
+8. **Cover letter**: written from your resume facts only.
+9. **Review** (optional): confirm, edit or cancel before anything is sent.
+10. **Apply**: the application and letter are emailed to a test inbox and the tracker is updated.
+
+The run stops on its own when it hits a limit: maximum steps, token budget, or maximum
+applications per session. Every run ends with a stop reason.
+
+## Quick start
+
+Requires Python 3.11+.
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate            # Windows (Linux/macOS: source .venv/bin/activate)
+.venv\Scripts\activate            # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-copy .env.example .env            # then fill in keys (not needed for --dry)
+copy .env.example .env            # Linux/macOS: cp .env.example .env
 ```
 
-## Run
+Fill in `.env` with your keys (not needed for the demo run). Settings include the OpenAI
+and LangSmith keys, the mail server and test inbox, the batch size, and the three limits.
+
+## Usage
 
 ```bash
-python -m graph.run --dry         # whole graph with stubs, no API keys
-streamlit run app/main.py         # placeholder web page
+python -m graph.run --dry         # full run with sample data, no API keys
+streamlit run app/main.py         # web interface
 python -m pytest -q               # tests
 ```
 
-## Workflow (10 stages)
+Which model is used for each step is set in `config/models.yaml`.
 
-1 upload -> 2 profile -> 3 find_offers -> 4 security -> 5 rank -> 6 show_batch ->
-7 user_decides (pause) -> 8 cover_letter -> 9 review (optional pause) -> 10 apply -> 7.
-From 7 the user can also go to "Next" (6), "Find others" (3) or "Done" (end).
-Review can confirm (10), edit (8) or cancel (7).
+## Project status
 
-Global limits (`MAX_STEPS`, `MAX_TOKENS`, `MAX_APPLICATIONS`) are enforced in
-`graph/graph.py`, not in prompts. The final state always has a `stop_reason`:
-`user_done`, `max_steps`, `token_budget` or `max_applications`.
+The structure and the flow are in place, but each step still returns sample data, and the web
+page is a placeholder. See [FILES.md](FILES.md) for the folder layout and what each file is for.
 
-## Which file to edit for which task
+## Tech
 
-| Task | File |
-|---|---|
-| SET-01 layout, dependencies | `requirements.txt`, `.gitignore` |
-| SET-02 settings and secrets | `core/config.py`, `.env.example` |
-| SET-03 data models | `core/models.py` |
-| SET-04 workflow state | `core/state.py` |
-| SET-05 model per stage | `config/models.yaml` |
-| Stage 1 upload resume | `graph/nodes/upload.py` (UI: `app/main.py`) |
-| Stage 2 build profile | `graph/nodes/profile.py` |
-| Stage 3 find offers | `graph/nodes/find_offers.py`, `services/scraping/` |
-| Stage 4 security check | `graph/nodes/security.py` |
-| Stage 5 rank offers | `graph/nodes/rank.py` |
-| Stage 6 show batch | `graph/nodes/show_batch.py` |
-| Stage 7 user decides | `graph/nodes/user_decides.py` |
-| Stage 8 cover letter | `graph/nodes/cover_letter.py` |
-| Stage 9 review | `graph/nodes/review.py` |
-| Stage 10 apply | `graph/nodes/apply.py`, `services/mailer/`, `services/tracker/` |
-| Graph wiring, limits, stop reasons | `graph/graph.py` |
-| Dry-run CLI and scripted user | `graph/run.py` |
-| Evaluation scenarios | `eval/` |
-| Sample resumes and offers | `data/samples/` |
-
-Each node file exposes `node(state) -> dict` (a partial state update). Keep to that
-signature and you will not need to touch other stages.
-
-`legacy/` holds the old draft (kept for reference, not used).
+Python, OpenAI API, LangChain, LangGraph, LangSmith, Streamlit, Pydantic, SQLite, pytest.
