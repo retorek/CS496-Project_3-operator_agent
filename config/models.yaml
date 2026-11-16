@@ -1,5 +1,6 @@
 # Model per stage. Replace the placeholders. Only these stages call a model.
-profile:      {model: TODO-model-name, temperature: 0.0}
+# provider: "openai" (default) or "google_genai" (Gemini, free tier for testing).
+profile:      {provider: google_genai, model: gemini-3.5-flash-lite, temperature: 0.0}
 find_offers:  {model: TODO-model-name, temperature: 0.0}
 security:     {model: TODO-model-name, temperature: 0.0}
 rank:         {model: TODO-model-name, temperature: 0.0}

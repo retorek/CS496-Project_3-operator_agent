@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     openai_api_key: str | None = None
+    google_api_key: str | None = None
     langsmith_api_key: str | None = None
     langsmith_tracing: bool = True
     langsmith_project: str = "internship-agent"
@@ -28,8 +29,10 @@ class Settings(BaseSettings):
     max_applications: int = 3
     max_steps: int = 50
     max_tokens: int = 200_000
+    llm_timeout: int = 60       # seconds per model call
+    llm_max_retries: int = 2    # retries on overload/timeout, then the stage fails
 
-    @field_validator("openai_api_key", "langsmith_api_key", "smtp_user", "smtp_password")
+    @field_validator("openai_api_key", "google_api_key", "langsmith_api_key", "smtp_user", "smtp_password")
     @classmethod
     def _empty_is_none(cls, v):
         return v or None
@@ -47,6 +50,7 @@ def get_settings(dry: bool = False) -> Settings:
 
 
 class ModelSpec(BaseModel):
+    provider: str = "openai"  # LangChain provider name: "openai" | "google_genai"
     model: str
     temperature: float = 0.0
 

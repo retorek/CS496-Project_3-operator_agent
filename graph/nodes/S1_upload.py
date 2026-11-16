@@ -1,10 +1,13 @@
 """Stage 1 - Upload resume."""
+from core.resume_reader import read_resume
 from core.samples import load_resume
 
 
 def node(state: dict) -> dict:
-    """Input: nothing (the Streamlit page will provide the file in the real version).
+    """Input: `resume_path` (.pdf or .txt; set by the CLI now, by Streamlit later).
     Output: `resume_text` (raw text).
-    Will: read the uploaded resume file and extract its text.
-    Stub: returns a sample resume from data/samples/."""
-    return {"resume_text": load_resume()}
+    `location_preferences` is already in the state from the same upload; nothing to do here.
+    If no path is given, falls back to the mock sample in data/samples/."""
+    path = state.get("resume_path", "")
+    text = read_resume(path) if path else load_resume()
+    return {"resume_text": text}
