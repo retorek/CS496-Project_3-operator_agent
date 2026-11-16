@@ -11,6 +11,7 @@ from core.models import Application, Offer, Profile, RankedOffer, SecurityVerdic
 
 class WorkflowState(TypedDict, total=False):
     resume_text: str                      # stage 1 output
+    location_preferences: list[str]       # stage 1 output (user input at upload)
     profile: Profile | None               # stage 2
     offers: list[Offer]                   # stage 3: all offers scraped so far
     quarantined: list[SecurityVerdict]    # stage 4: flagged offers
@@ -34,7 +35,7 @@ class WorkflowState(TypedDict, total=False):
 
 def initial_state(review_enabled: bool = True) -> WorkflowState:
     return WorkflowState(
-        resume_text="", profile=None, offers=[], quarantined=[], ranked=[],
+        resume_text="", location_preferences=[], profile=None, offers=[], quarantined=[], ranked=[],
         batch_cursor=0, current_batch=[], selected_offer_ids=[], next_action="", route="",
         current_offer=None, cover_letters={}, review_enabled=review_enabled,
         review_decision="", applications=[], applications_sent=0, steps=0,
