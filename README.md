@@ -66,8 +66,9 @@ On the **Resume & profile** page:
    searches chosen by the AI* (`agent` mode, needs the provider's key). See step 3 below.
 5. Click **Build my profile and find offers**. Searching job sites takes one to two minutes.
 
-The profile and the offers found are shown on the page; the **Offers** page in the sidebar
-shows the same list.
+The profile appears closed: click it to see the details. Below it, each safe offer is shown in
+its own box (click **Description** to read it). Offers blocked by the security check are listed
+apart, closed, with the reasons. The **Offers** page in the sidebar shows the same offers.
 
 Uploaded files are checked (type, size, real content) and saved under a random name in
 `data/uploads/`, which is git-ignored. Errors (wrong file, unreadable PDF, missing key, model
