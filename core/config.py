@@ -1,11 +1,16 @@
 """Typed settings loaded from .env, plus per-stage model config (config/models.yaml)."""
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 MODELS_YAML = Path(__file__).resolve().parent.parent / "config" / "models.yaml"
+
+# LangChain provider name -> label shown to the user, and the Settings field holding its key.
+PROVIDERS = {"openai": "OpenAI", "google_genai": "Gemini"}
+PROVIDER_KEYS = {"openai": "openai_api_key", "google_genai": "google_api_key"}
 
 
 class ConfigError(RuntimeError):
@@ -31,6 +36,7 @@ class Settings(BaseSettings):
     max_tokens: int = 200_000
     llm_timeout: int = 60       # seconds per model call
     llm_max_retries: int = 2    # retries on overload/timeout, then the stage fails
+    llm_provider: Literal["openai", "google_genai"] = "openai"  # default choice for a new run
 
     @field_validator("openai_api_key", "google_api_key", "langsmith_api_key", "smtp_user", "smtp_password")
     @classmethod
@@ -38,28 +44,34 @@ class Settings(BaseSettings):
         return v or None
 
 
-def get_settings(dry: bool = False) -> Settings:
-    """Load settings. A missing OpenAI key is an error unless dry=True."""
+def key_status(settings: Settings) -> dict[str, bool]:
+    """Provider -> is its API key set in .env. No network call."""
+    return {p: bool(getattr(settings, field)) for p, field in PROVIDER_KEYS.items()}
+
+
+def get_settings(dry: bool = False, provider: str | None = None) -> Settings:
+    """Load settings. The chosen provider's key (default LLM_PROVIDER) is required unless dry=True."""
     settings = Settings()
-    if not dry and not settings.openai_api_key:
+    provider = provider or settings.llm_provider
+    if not dry and not key_status(settings)[provider]:
         raise ConfigError(
-            "OPENAI_API_KEY is missing. Copy .env.example to .env and set it, "
+            f"{PROVIDER_KEYS[provider].upper()} is missing. Copy .env.example to .env and set it, "
             "or run with --dry (no keys needed)."
         )
     return settings
 
 
 class ModelSpec(BaseModel):
-    provider: str = "openai"  # LangChain provider name: "openai" | "google_genai"
     model: str
     temperature: float = 0.0
 
 
-def load_model_config(path: Path = MODELS_YAML) -> dict[str, ModelSpec]:
-    """Stage name -> ModelSpec. The only place model names are read."""
+def load_model_config(path: Path = MODELS_YAML) -> dict[str, dict[str, ModelSpec]]:
+    """Stage -> provider -> ModelSpec. The only place model names are read."""
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    return {stage: ModelSpec(**spec) for stage, spec in raw.items()}
+    return {stage: {provider: ModelSpec(**spec) for provider, spec in by_provider.items()}
+            for stage, by_provider in raw.items()}
 
 
-def get_model_spec(stage: str) -> ModelSpec:
-    return load_model_config()[stage]
+def get_model_spec(stage: str, provider: str) -> ModelSpec:
+    return load_model_config()[stage][provider]

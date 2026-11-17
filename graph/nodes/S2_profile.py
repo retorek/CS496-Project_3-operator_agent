@@ -32,9 +32,10 @@ def stub_profile() -> Profile:
     )
 
 
-def llm_profile(resume_text: str) -> tuple[Profile, int]:
-    """Ask the 'profile' model (config/models.yaml) to fill a Profile. Returns (profile, tokens)."""
-    model = get_chat_model("profile", get_settings(dry=True))
+def llm_profile(resume_text: str, provider: str) -> tuple[Profile, int]:
+    """Ask the 'profile' model (config/models.yaml) of `provider` to fill a Profile.
+    Returns (profile, tokens)."""
+    model = get_chat_model("profile", get_settings(dry=True), provider)
     out = model.with_structured_output(Profile, include_raw=True).invoke(
         PROMPT.format(resume=resume_text))
     if out["parsed"] is None:
@@ -44,12 +45,13 @@ def llm_profile(resume_text: str) -> tuple[Profile, int]:
 
 
 def node(state: dict) -> dict:
-    """Input: `resume_text`, `location_preferences` (given by the user, not extracted), `use_llm`.
+    """Input: `resume_text`, `location_preferences` (given by the user, not extracted), `use_llm`,
+    `llm_provider`.
     Output: `profile`, updated `tokens_used`.
     If the model call fails: no profile, `stop_reason="llm_error"`, the reason in `errors`."""
     if state.get("use_llm"):
         try:
-            profile, tokens = llm_profile(state["resume_text"])
+            profile, tokens = llm_profile(state["resume_text"], state.get("llm_provider", "openai"))
         except ConfigError:
             raise  # missing key: a setup problem, shown by the CLI
         except Exception as e:  # overload, timeout, quota, network, output not a Profile

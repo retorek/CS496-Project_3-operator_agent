@@ -38,8 +38,9 @@ Fill in `.env` with your keys (not needed for the demo run). Settings include th
 Google and LangSmith keys, the mail server and test inbox, the batch size, the three limits,
 and the model call timeout and retries (`LLM_TIMEOUT`, `LLM_MAX_RETRIES`).
 
-While testing, the profile step uses a free Gemini key (`GOOGLE_API_KEY`, from Google AI
-Studio) so the OpenAI credit is not used up. OpenAI stays the default for every other step.
+Two model providers are supported: **OpenAI** (`OPENAI_API_KEY`) and **Gemini**
+(`GOOGLE_API_KEY`, free key from Google AI Studio). One provider is chosen at the start of a run
+and used by every step until the end. `LLM_PROVIDER` in `.env` sets the default.
 
 ## Usage
 
@@ -49,7 +50,12 @@ Studio) so the OpenAI credit is not used up. OpenAI stays the default for every 
 streamlit run app/main.py
 ```
 
-Opens at http://localhost:8501. On the **Resume & profile** page:
+Opens at http://localhost:8501. At the top right, choose the **model provider** (OpenAI or
+Gemini); it shows whether that provider's key is set in `.env`. Once a run has started the choice
+is locked, so the same provider is used for the whole run; **Start over** clears the run and
+unlocks it.
+
+On the **Resume & profile** page:
 
 1. Choose your resume (PDF or TXT, max 5 MB).
 2. Type where you want to work, separated by commas (e.g. `Lyon, Remote`).
@@ -67,6 +73,7 @@ busy) are shown on the page; unexpected errors are logged in the terminal runnin
 python -m graph.run --dry                       # full run with sample data, no API keys
 python -m graph.run --dry --resume data/samples/resume_bob.txt --locations "Lyon, Remote"
 python -m graph.run --dry --llm --resume my_cv.pdf --locations "Lyon, Remote"
+python -m graph.run --dry --llm --provider gemini --resume my_cv.pdf
 ```
 
 | Flag | Meaning |
@@ -75,8 +82,9 @@ python -m graph.run --dry --llm --resume my_cv.pdf --locations "Lyon, Remote"
 | `--resume PATH` | Resume to read (`.pdf` or `.txt`). Default: a sample resume. |
 | `--locations "A, B"` | Where the user wants to work. |
 | `--llm` | The profile step calls its real model (needs its key in `.env`). |
+| `--provider openai\|gemini` | Model provider for the whole run. Default: `LLM_PROVIDER` in `.env`. |
 
-It prints the start of the resume text, the profile, any errors, and the stop reason.
+It prints the provider, the start of the resume text, the profile, any errors, and the stop reason.
 
 ### Tests
 
@@ -86,8 +94,8 @@ python -m pytest -q
 
 ### Models
 
-Which model each step uses is set in `config/models.yaml`, with an optional `provider`
-(`openai` by default, or `google_genai` for Gemini). Switching provider needs no code change.
+`config/models.yaml` gives, for each step, the model name and temperature for both providers
+(`openai` and `google_genai`). Changing a model needs no code change.
 
 ## Project status
 

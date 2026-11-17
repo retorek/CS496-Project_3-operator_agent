@@ -12,7 +12,7 @@ from graph.graph import build_graph
 log = logging.getLogger(__name__)
 
 
-def run_profile(resume_path: str, locations: list[str], use_llm: bool) -> dict:
+def run_profile(resume_path: str, locations: list[str], use_llm: bool, provider: str) -> dict:
     """Run the graph until its first pause (stage 7) and return the state.
     Stages 3-6 are still stubs, so in practice this builds the profile."""
     settings = get_settings(dry=True)  # API keys are checked by core/llm.py when needed
@@ -20,11 +20,11 @@ def run_profile(resume_path: str, locations: list[str], use_llm: bool) -> dict:
     config = {"configurable": {"thread_id": str(uuid.uuid4())},
               "recursion_limit": settings.max_steps + 20}
     graph.invoke(initial_state(resume_path=resume_path, location_preferences=locations,
-                               use_llm=use_llm), config)
+                               use_llm=use_llm, llm_provider=provider), config)
     return graph.get_state(config).values
 
 
-def handle_submit(file, locations_text: str, use_llm: bool) -> None:
+def handle_submit(file, locations_text: str, use_llm: bool, provider: str) -> None:
     """Save the file, run the profile stage, store the result. Shows one clear error on failure."""
     if file is None:
         st.warning("Choose a resume file first.")
@@ -33,7 +33,7 @@ def handle_submit(file, locations_text: str, use_llm: bool) -> None:
     try:
         path = save_upload(file.name, file.getvalue())
         with st.spinner("Reading your resume and building the profile..."):
-            st.session_state["profile_run"] = run_profile(str(path), locations, use_llm)
+            st.session_state["profile_run"] = run_profile(str(path), locations, use_llm, provider)
     except UploadError as e:  # refused file (type, size, content)
         st.error(str(e))
     except ConfigError as e:  # e.g. API key missing
@@ -65,7 +65,8 @@ def show_result(state: dict) -> None:
         st.text(state["resume_text"])
 
 
-def render() -> None:
+def render(provider: str) -> None:
+    """`provider` is the model provider chosen in the top-right picker."""
     with st.form("upload"):
         file = st.file_uploader("Resume (PDF or TXT, max 5 MB)", type=["pdf", "txt"])
         locations_text = st.text_input("Where do you want to work?", placeholder="Lyon, Remote")
@@ -74,6 +75,8 @@ def render() -> None:
         submitted = st.form_submit_button("Build my profile")
     if submitted:
         st.session_state.pop("profile_run", None)
-        handle_submit(file, locations_text, use_llm)
+        handle_submit(file, locations_text, use_llm, provider)
+        if "profile_run" in st.session_state:
+            st.rerun()  # redraw the page so the provider picker shows as locked
     if "profile_run" in st.session_state:
         show_result(st.session_state["profile_run"])

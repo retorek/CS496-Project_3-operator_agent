@@ -52,7 +52,8 @@
 
 | File | Intended use |
 |---|---|
-| `main.py` | Streamlit entry point: sidebar and page selection. Pages after the profile are placeholders. |
+| `main.py` | Streamlit entry point: title, provider picker (top right), sidebar and page selection. Pages after the profile are placeholders. |
+| `provider_picker.py` | OpenAI / Gemini choice with key status (set or missing in `.env`). Locked while a run exists; **Start over** clears the run. |
 | `upload_page.py` | Resume & profile page: upload form, runs the graph up to the first pause, shows the profile or a clear error. |
 | `uploads.py` | Checks an uploaded file (PDF/TXT only, max 5 MB, real content) and saves it under a random name in `data/uploads/`. |
 
@@ -60,25 +61,25 @@
 
 | File | Intended use |
 |---|---|
-| `config.py` | Loads settings from `.env` (keys, limits, model timeout and retries) and the per-step models from `config/models.yaml`. Raises a clear error if the OpenAI key is missing (not in dry mode). |
-| `llm.py` | Builds the chat model for a step from `config/models.yaml` (provider + model), with the timeout and retry limits. Clear error if that provider's key is missing. |
+| `config.py` | Loads settings from `.env` (keys, default provider, limits, model timeout and retries) and the per-step, per-provider models from `config/models.yaml`. `key_status()` tells which provider keys are set. Raises a clear error if the chosen provider's key is missing (not in dry mode). |
+| `llm.py` | `get_chat_model(stage, settings, provider)`: builds the chat model for a step with the run's provider, with the timeout and retry limits. Clear error if that provider's key is missing. |
 | `resume_reader.py` | Reads a resume file (`.pdf` with pypdf, or `.txt`) and returns its text. Clear errors for other formats, damaged or scanned PDFs. |
 | `models.py` | Shared data models: Profile, Offer, SecurityVerdict, RankedOffer, OfferStatus, Application, TrackerEntry. |
-| `state.py` | The workflow state passed between steps. Inputs set at the start: `resume_path`, `location_preferences`, `use_llm`. |
+| `state.py` | The workflow state passed between steps. Inputs set at the start: `resume_path`, `location_preferences`, `use_llm`, `llm_provider` (used by every step that calls a model). |
 | `samples.py` | Loads the sample resumes and offers for the stubs. |
 
 ## `config/`
 
 | File | Intended use |
 |---|---|
-| `models.yaml` | Provider (`openai` by default, or `google_genai`), model name and temperature for each step that calls a model. |
+| `models.yaml` | For each step that calls a model: model name and temperature for OpenAI (`openai`) and for Gemini (`google_genai`). |
 
 ## `graph/`
 
 | File | Intended use |
 |---|---|
 | `graph.py` | Wires the 10 steps with their branches and loops, pauses for the user (stages 7 and 9), and enforces the limits and stop reasons. |
-| `run.py` | Command line entry point. `--dry` runs the whole graph on sample data with a scripted user and no keys; `--resume`, `--locations` and `--llm` feed a real resume to the profile step. |
+| `run.py` | Command line entry point. `--dry` runs the whole graph on sample data with a scripted user and no keys; `--resume`, `--locations` and `--llm` feed a real resume to the profile step; `--provider openai\|gemini` picks the model provider for the run. |
 
 ## `graph/nodes/`
 
