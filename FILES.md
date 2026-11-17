@@ -53,7 +53,7 @@
 | File | Intended use |
 |---|---|
 | `main.py` | Streamlit entry point: title, provider picker (top right), sidebar and page selection. Pages after Offers are placeholders. |
-| `offers_view.py` | Safe offers, each in a box (title, company, location, source, URL, description hidden until clicked); offers blocked by the security check in a separate closed section with the reasons; searches that failed. Text from job sites is escaped or shown as plain text, so it cannot add links or formatting. |
+| `offers_view.py` | Ranked offers, best match first, each in a card (position, title, company, location, match score coloured green/orange/red with a bar, the reason for the score, source, URL, description hidden until clicked). If ranking failed, the safe offers in the order found; offers blocked by the security check in a separate closed section with the reasons; searches that failed. Text from job sites is escaped or shown as plain text, so it cannot add links or formatting. |
 | `provider_picker.py` | OpenAI / Gemini choice with key status (set or missing in `.env`). Locked while a run exists; **Start over** clears the run. |
 | `upload_page.py` | Resume & profile page: upload form (resume, locations, real model or not, how to find offers), runs the graph up to the first pause, shows the profile (closed until clicked) and the offers, or a clear error. |
 | `uploads.py` | Checks an uploaded file (PDF/TXT only, max 5 MB, real content) and saves it under a random name in `data/uploads/`. |

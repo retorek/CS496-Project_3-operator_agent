@@ -66,8 +66,9 @@ On the **Resume & profile** page:
    searches chosen by the AI* (`agent` mode, needs the provider's key). See step 3 below.
 5. Click **Build my profile and find offers**. Searching job sites takes one to two minutes.
 
-The profile appears closed: click it to see the details. Below it, each safe offer is shown in
-its own box (click **Description** to read it). Offers blocked by the security check are listed
+The profile appears closed: click it to see the details. Below it, the safe offers are ranked
+best match first, each in its own card with its match score (0-100, green / orange / red), a
+score bar and the reason for the score (click **Description** to read the offer). Offers blocked by the security check are listed
 apart, closed, with the reasons. The **Offers** page in the sidebar shows the same offers.
 
 Uploaded files are checked (type, size, real content) and saved under a random name in
@@ -138,7 +139,9 @@ python -m pytest -q
   from the web page or the command line. If the model fails, the run stops with
   `stop_reason="llm_error"` and the error is shown.
 - **Done:** step 3, from the web page or the command line (`--search scrape` or `--search agent`).
-- **Still sample data:** steps 4 to 10. The Decisions, Review and Tracker pages are placeholders.
+- **Done:** steps 4 (security check) and 5 (ranking), shown on the web page. On the command line
+  they run in offline demo mode by default.
+- **Still sample data:** steps 6 to 10. The Decisions, Review and Tracker pages are placeholders.
 
 See [FILES.md](FILES.md) for the folder layout and what each file is for.
 
