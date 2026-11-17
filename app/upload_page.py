@@ -65,14 +65,14 @@ def show_result(state: dict) -> None:
         if not state.get("profile"):
             return
     profile = state["profile"]
-    st.success("Profile ready.")
-    st.subheader(f"{profile.name} - {profile.email}")
-    for label, items in [("Target roles", profile.target_roles), ("Skills", profile.skills),
-                         ("Education", profile.education), ("Experience", profile.experience),
-                         ("Languages", profile.languages),
-                         ("Locations", profile.location_preferences)]:
-        st.markdown(f"**{label}**")
-        st.markdown("\n".join(f"- {item}" for item in items) or "_none_")
+    st.success("Profile ready. Click below to see it.")
+    with st.expander(f"Your profile: {profile.name} - {profile.email}"):  # closed by default
+        for label, items in [("Target roles", profile.target_roles), ("Skills", profile.skills),
+                             ("Education", profile.education), ("Experience", profile.experience),
+                             ("Languages", profile.languages),
+                             ("Locations", profile.location_preferences)]:
+            st.markdown(f"**{label}**")
+            st.markdown("\n".join(f"- {item}" for item in items) or "_none_")
     with st.expander("Text read from the resume"):
         st.text(state["resume_text"])
     offers_view.render(state)
