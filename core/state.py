@@ -16,6 +16,8 @@ class WorkflowState(TypedDict, total=False):
     use_llm: bool                         # stage 2 calls its real model (else stub)
     llm_provider: str                     # "openai" | "google_genai": chosen once, used by every LLM stage
     profile: Profile | None               # stage 2
+    search_mode: str                      # stage 3: "stub" (samples) | "scrape" | "agent"
+    search_pages: dict[str, int]          # stage 3: "source|query|location" -> next page to read
     offers: list[Offer]                   # stage 3: all offers scraped so far
     quarantined: list[SecurityVerdict]    # stage 4: flagged offers
     ranked: list[RankedOffer]             # stage 5
@@ -38,11 +40,13 @@ class WorkflowState(TypedDict, total=False):
 
 def initial_state(review_enabled: bool = True, resume_path: str = "",
                   location_preferences: list[str] | None = None,
-                  use_llm: bool = False, llm_provider: str = "openai") -> WorkflowState:
+                  use_llm: bool = False, llm_provider: str = "openai",
+                  search_mode: str = "stub") -> WorkflowState:
     return WorkflowState(
         resume_path=resume_path, resume_text="",
         location_preferences=location_preferences or [], use_llm=use_llm,
-        llm_provider=llm_provider, profile=None, offers=[], quarantined=[], ranked=[],
+        llm_provider=llm_provider, profile=None, search_mode=search_mode, search_pages={},
+        offers=[], quarantined=[], ranked=[],
         batch_cursor=0, current_batch=[], selected_offer_ids=[], next_action="", route="",
         current_offer=None, cover_letters={}, review_enabled=review_enabled,
         review_decision="", applications=[], applications_sent=0, steps=0,

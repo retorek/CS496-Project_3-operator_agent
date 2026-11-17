@@ -52,9 +52,10 @@
 
 | File | Intended use |
 |---|---|
-| `main.py` | Streamlit entry point: title, provider picker (top right), sidebar and page selection. Pages after the profile are placeholders. |
+| `main.py` | Streamlit entry point: title, provider picker (top right), sidebar and page selection. Pages after Offers are placeholders. |
+| `offers_view.py` | List of the offers found (title, company, location, source, URL) and the searches that failed. Text from job sites is escaped so it cannot add links or formatting. |
 | `provider_picker.py` | OpenAI / Gemini choice with key status (set or missing in `.env`). Locked while a run exists; **Start over** clears the run. |
-| `upload_page.py` | Resume & profile page: upload form, runs the graph up to the first pause, shows the profile or a clear error. |
+| `upload_page.py` | Resume & profile page: upload form (resume, locations, real model or not, how to find offers), runs the graph up to the first pause, shows the profile and the offers, or a clear error. |
 | `uploads.py` | Checks an uploaded file (PDF/TXT only, max 5 MB, real content) and saves it under a random name in `data/uploads/`. |
 
 ## `core/`
@@ -65,7 +66,7 @@
 | `llm.py` | `get_chat_model(stage, settings, provider)`: builds the chat model for a step with the run's provider, with the timeout and retry limits. Clear error if that provider's key is missing. |
 | `resume_reader.py` | Reads a resume file (`.pdf` with pypdf, or `.txt`) and returns its text. Clear errors for other formats, damaged or scanned PDFs. |
 | `models.py` | Shared data models: Profile, Offer, SecurityVerdict, RankedOffer, OfferStatus, Application, TrackerEntry. |
-| `state.py` | The workflow state passed between steps. Inputs set at the start: `resume_path`, `location_preferences`, `use_llm`, `llm_provider` (used by every step that calls a model). |
+| `state.py` | The workflow state passed between steps. Inputs set at the start: `resume_path`, `location_preferences`, `use_llm`, `llm_provider` (used by every step that calls a model), `search_mode` (step 3). |
 | `samples.py` | Loads the sample resumes and offers for the stubs. |
 
 ## `config/`
@@ -79,7 +80,7 @@
 | File | Intended use |
 |---|---|
 | `graph.py` | Wires the 10 steps with their branches and loops, pauses for the user (stages 7 and 9), and enforces the limits and stop reasons. |
-| `run.py` | Command line entry point. `--dry` runs the whole graph on sample data with a scripted user and no keys; `--resume`, `--locations` and `--llm` feed a real resume to the profile step; `--provider openai\|gemini` picks the model provider for the run. |
+| `run.py` | Command line entry point. `--dry` runs the whole graph on sample data with a scripted user and no keys; `--resume`, `--locations` and `--llm` feed a real resume to the profile step; `--provider openai\|gemini` picks the model provider for the run; `--search stub\|scrape\|agent` picks how step 3 finds offers. |
 
 ## `graph/nodes/`
 
@@ -89,7 +90,7 @@ Files are named `S<stage number>_<name>.py`. Each exposes `node(state) -> dict`,
 |---|---|
 | `S1_upload.py` | 1. Read the resume at `resume_path` (sample resume if empty). |
 | `S2_profile.py` | 2. Build a structured profile with the model (or a fixed one without `use_llm`); copies the user's locations. Stops with `llm_error` if the model fails. |
-| `S3_find_offers.py` | 3. Find new offers, skipping those already seen. |
+| `S3_find_offers.py` | 3. Find new offers, skipping those already seen. Three modes: `stub` (samples), `scrape` (each role in each location on each site, no LLM), `agent` (the model calls one tool, `SearchJobs`, to pick site, query and location). `Collector` runs the searches, drops duplicates and remembers the next page of each search. |
 | `S4_security.py` | 4. Quarantine unsafe offers. |
 | `S5_rank.py` | 5. Score and rank safe offers. |
 | `S6_show_batch.py` | 6. Pick the next batch of offers to show. |
@@ -100,7 +101,21 @@ Files are named `S<stage number>_<name>.py`. Each exposes `node(state) -> dict`,
 
 ## `services/`
 
-`scraping/`, `mailer/` and `tracker/` are empty packages (`__init__.py` only) for now.
+`mailer/` and `tracker/` are empty packages (`__init__.py` only) for now.
+
+### `services/scraping/`
+
+Every source has the same function: `search(query, location, page, max_offers, seen_ids) -> list[Offer]`.
+
+| File | Intended use |
+|---|---|
+| `__init__.py` | `SOURCES` (name, module, what it covers) and `search(source, ...)`: the only entry point stage 3 uses. |
+| `fetch.py` | `fetch_html()` / `fetch_json()`: allowed hosts only, delay per host, timeout, size cap. `ScrapeError` on failure, `PageNotFound` for HTTP 404. |
+| `jsonld.py` | Reads schema.org `JobPosting` blocks from an offer page and turns them into `Offer`s. `read_offer_pages()` opens offer pages, skipping seen ones and duplicates. |
+| `filters.py` | Text helpers: location match, keyword match, duplicate key, French query (`intern` -> `stage`), shorter fallback query. |
+| `jobijoba.py` | Jobijoba (France): `/fr/emploi/<query>/<city>?page=N`, then each offer page. |
+| `keejob.py` | Keejob (Tunisia): `/offres-emploi/?keywords=...&page=N`, then each offer page; city checked per offer. |
+| `arbeitnow.py` | Arbeitnow (Europe, remote): public JSON API, keywords and location filtered in code. |
 
 ## `data/samples/`
 

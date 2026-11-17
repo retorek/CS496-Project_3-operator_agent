@@ -11,6 +11,7 @@ def get_chat_model(stage: str, settings: Settings, provider: str):
     if not key:
         raise ConfigError(f"{PROVIDER_KEYS[provider].upper()} is missing in .env "
                           f"(needed by stage '{stage}').")
-    return init_chat_model(spec.model, model_provider=provider,
-                           temperature=spec.temperature, api_key=key,
-                           timeout=settings.llm_timeout, max_retries=settings.llm_max_retries)
+    extra = {} if spec.temperature is None else {"temperature": spec.temperature}
+    return init_chat_model(spec.model, model_provider=provider, api_key=key,
+                           timeout=settings.llm_timeout, max_retries=settings.llm_max_retries,
+                           **extra)

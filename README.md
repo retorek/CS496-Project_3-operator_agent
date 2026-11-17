@@ -9,7 +9,8 @@ never to the employer.
 
 1. **Upload** your resume.
 2. **Profile**: your skills, experience, education and target roles are extracted.
-3. **Find offers**: new offers are collected from job websites; ones already seen are skipped.
+3. **Find offers**: new offers are collected from job websites (Jobijoba for France, Keejob for
+   Tunisia, Arbeitnow for Europe and remote); ones already seen are skipped.
 4. **Security check**: offers containing prompt injection, suspicious links or requests for
    personal data are quarantined.
 5. **Rank**: safe offers get a score and a short reason.
@@ -61,7 +62,12 @@ On the **Resume & profile** page:
 2. Type where you want to work, separated by commas (e.g. `Lyon, Remote`).
 3. Keep **Use the real model** checked to build the profile with the model from
    `config/models.yaml` (needs its API key), or uncheck it to get a fixed sample profile.
-4. Click **Build my profile**.
+4. Choose **How to find offers**: *Sample offers*, *Job sites* (`scrape` mode) or *Job sites,
+   searches chosen by the AI* (`agent` mode, needs the provider's key). See step 3 below.
+5. Click **Build my profile and find offers**. Searching job sites takes one to two minutes.
+
+The profile and the offers found are shown on the page; the **Offers** page in the sidebar
+shows the same list.
 
 Uploaded files are checked (type, size, real content) and saved under a random name in
 `data/uploads/`, which is git-ignored. Errors (wrong file, unreadable PDF, missing key, model
@@ -74,6 +80,8 @@ python -m graph.run --dry                       # full run with sample data, no 
 python -m graph.run --dry --resume data/samples/resume_bob.txt --locations "Lyon, Remote"
 python -m graph.run --dry --llm --resume my_cv.pdf --locations "Lyon, Remote"
 python -m graph.run --dry --llm --provider gemini --resume my_cv.pdf
+python -m graph.run --dry --search scrape --locations "Lyon, Tunis"   # real job sites, no LLM
+python -m graph.run --dry --llm --search agent --locations "Lyon, Remote"   # LLM picks the searches
 ```
 
 | Flag | Meaning |
@@ -83,8 +91,34 @@ python -m graph.run --dry --llm --provider gemini --resume my_cv.pdf
 | `--locations "A, B"` | Where the user wants to work. |
 | `--llm` | The profile step calls its real model (needs its key in `.env`). |
 | `--provider openai\|gemini` | Model provider for the whole run. Default: `LLM_PROVIDER` in `.env`. |
+| `--search stub\|scrape\|agent` | How step 3 finds offers (default `stub`, see below). |
 
-It prints the provider, the start of the resume text, the profile, any errors, and the stop reason.
+It prints the provider, the start of the resume text, the profile, the searches run and the
+offers found, any errors, and the stop reason.
+
+### Finding offers (step 3)
+
+| Mode | What happens |
+|---|---|
+| `stub` | Sample offers from `data/samples/`. Offline, no key. |
+| `scrape` | Real job sites, no LLM: each target role from the profile is searched in each location on every site (at most `MAX_QUERIES` pairs). |
+| `agent` | Real job sites; the model chooses the site, the query and the location, at most `FIND_MAX_TOOL_CALLS` searches. Needs the provider's key. |
+
+| Site | Covers | How offers are read |
+|---|---|---|
+| Jobijoba | France | Search page, then the structured `JobPosting` data on each offer page |
+| Keejob | Tunisia | Same as Jobijoba; the city is checked on each offer |
+| Arbeitnow | Europe (mostly Germany), remote | Free public JSON API |
+
+Scraping is polite and limited: only these three sites can be fetched, with a delay between
+requests to the same site (`SCRAPE_DELAY`), a timeout (`SCRAPE_TIMEOUT`), a page size cap, and at
+most `MAX_OFFERS_PER_SEARCH` new offers per search. Each site's robots.txt allows the pages used.
+The same job listed twice (other URL, same title and place) is kept once. "Find others" reads
+the next results page of each search. Offer text is only extracted as data: the model in `agent`
+mode sees title, company and place, never the full page, and is told not to follow instructions
+found in it. A site that fails is logged in `errors` and the run goes on.
+
+A scrape run takes about a minute or two: Jobijoba answers in 1 to 5 seconds per page.
 
 ### Tests
 
@@ -102,7 +136,8 @@ python -m pytest -q
 - **Done:** steps 1 and 2. A PDF or TXT resume is read and turned into a profile by the model,
   from the web page or the command line. If the model fails, the run stops with
   `stop_reason="llm_error"` and the error is shown.
-- **Still sample data:** steps 3 to 10, and the other web pages are placeholders.
+- **Done:** step 3, from the web page or the command line (`--search scrape` or `--search agent`).
+- **Still sample data:** steps 4 to 10. The Decisions, Review and Tracker pages are placeholders.
 
 See [FILES.md](FILES.md) for the folder layout and what each file is for.
 

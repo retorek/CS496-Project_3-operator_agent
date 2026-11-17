@@ -2,18 +2,19 @@
 # The provider (OpenAI or Gemini) is chosen once per run: top-right selector on the web
 # page, or --provider on the command line. Default: LLM_PROVIDER in .env.
 # The OpenAI model name has not been checked against an account yet: confirm it exists.
+# No temperature for Gemini 3.5: it uses fixed sampling and ignores the setting.
 profile:
   openai:       {model: gpt-4.1-mini, temperature: 0.0}
-  google_genai: {model: gemini-3.5-flash-lite, temperature: 0.0}
+  google_genai: {model: gemini-3.5-flash-lite}
 find_offers:
   openai:       {model: gpt-4.1-mini, temperature: 0.0}
-  google_genai: {model: gemini-3.5-flash-lite, temperature: 0.0}
+  google_genai: {model: gemini-3.5-flash-lite}
 security:
   openai:       {model: gpt-4.1-mini, temperature: 0.0}
-  google_genai: {model: gemini-3.5-flash-lite, temperature: 0.0}
+  google_genai: {model: gemini-3.5-flash-lite}
 rank:
   openai:       {model: gpt-4.1-mini, temperature: 0.0}
-  google_genai: {model: gemini-3.5-flash-lite, temperature: 0.0}
+  google_genai: {model: gemini-3.5-flash-lite}
 cover_letter:
   openai:       {model: gpt-4.1-mini, temperature: 0.7}
-  google_genai: {model: gemini-3.5-flash-lite, temperature: 0.7}
+  google_genai: {model: gemini-3.5-flash-lite}

@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     llm_timeout: int = 60       # seconds per model call
     llm_max_retries: int = 2    # retries on overload/timeout, then the stage fails
     llm_provider: Literal["openai", "google_genai"] = "openai"  # default choice for a new run
+    # Stage 3 (find offers)
+    scrape_delay: float = 1.0       # seconds between two requests to the same site
+    scrape_timeout: int = 15        # seconds per request
+    max_offers_per_search: int = 5  # new offers kept per (source, query, location)
+    max_queries: int = 4            # (role, location) pairs searched in "scrape" mode
+    find_max_tool_calls: int = 6    # searches the "agent" mode may run
 
     @field_validator("openai_api_key", "google_api_key", "langsmith_api_key", "smtp_user", "smtp_password")
     @classmethod
@@ -63,7 +69,7 @@ def get_settings(dry: bool = False, provider: str | None = None) -> Settings:
 
 class ModelSpec(BaseModel):
     model: str
-    temperature: float = 0.0
+    temperature: float | None = None  # None: the provider's default
 
 
 def load_model_config(path: Path = MODELS_YAML) -> dict[str, dict[str, ModelSpec]]:
