@@ -2,12 +2,16 @@
 import argparse
 import sys
 import uuid
+from collections import Counter
 
 from langgraph.types import Command
 
-from core.config import ConfigError, Settings, get_settings
+from core.config import PROVIDERS, ConfigError, Settings, get_settings
 from core.state import initial_state
 from graph.graph import build_graph
+
+# --provider value -> LangChain provider name
+CLI_PROVIDERS = {"openai": "openai", "gemini": "google_genai"}
 
 
 class ScriptedUser:
@@ -53,19 +57,31 @@ def default_dry_script() -> ScriptedUser:
 def run_graph(settings: Settings, user: ScriptedUser, review_enabled: bool = True,
               thread_id: str | None = None, resume_path: str = "",
               location_preferences: list[str] | None = None, use_llm: bool = False,
+              llm_provider: str | None = None, search_mode: str = "stub",
               security_dry_run: bool = True) -> dict:
-    """Run the scripted demo; set security_dry_run=False for live security checks."""
+    """Run to the end, answering each interrupt with `user`. Returns the final state.
+    `llm_provider` defaults to LLM_PROVIDER in .env.
+    Security uses deterministic demo checks unless security_dry_run=False."""
     graph = build_graph(settings)
     config = {"configurable": {"thread_id": thread_id or str(uuid.uuid4())},
               # LangGraph's own cap must stay above our max_steps so ours triggers first.
               "recursion_limit": settings.max_steps + 20}
     start = initial_state(review_enabled, resume_path, location_preferences, use_llm,
-                          security_dry_run=security_dry_run)
+                          llm_provider=llm_provider or settings.llm_provider,
+                          search_mode=search_mode, security_dry_run=security_dry_run)
     result = graph.invoke(start, config)
     while result.get("__interrupt__"):
         payload = result["__interrupt__"][0].value
         result = graph.invoke(Command(resume=user.answer(payload)), config)
     return graph.get_state(config).values
+
+
+def print_offers(offers: list) -> None:
+    """Offers found by stage 3, grouped by source."""
+    by_source = Counter(o.source for o in offers)
+    print(f"offers: {len(offers)} " + " ".join(f"{s}={n}" for s, n in by_source.items()))
+    for o in offers:
+        print(f"  [{o.source}] {o.title[:70]} | {o.company[:30]} | {o.location[:40]}")
 
 
 def main(argv=None) -> int:
@@ -74,10 +90,15 @@ def main(argv=None) -> int:
     parser.add_argument("--resume", default="", help="resume file (.pdf or .txt); default: mock")
     parser.add_argument("--locations", default="", help='where to look, e.g. "Lyon,Remote"')
     parser.add_argument("--llm", action="store_true", help="profile stage calls its real model")
+    parser.add_argument("--provider", choices=list(CLI_PROVIDERS),
+                        help="model provider for the whole run (default: LLM_PROVIDER in .env)")
+    parser.add_argument("--search", choices=["stub", "scrape", "agent"], default="stub",
+                        help="stage 3: sample offers, real job sites, or real sites driven by the LLM")
     args = parser.parse_args(argv)
     locations = [loc.strip() for loc in args.locations.split(",") if loc.strip()]
+    provider = CLI_PROVIDERS.get(args.provider)
     try:
-        settings = get_settings(dry=args.dry)
+        settings = get_settings(dry=args.dry, provider=provider)
     except ConfigError as e:
         print(f"Configuration error: {e}", file=sys.stderr)
         return 2
@@ -87,16 +108,20 @@ def main(argv=None) -> int:
     try:
         state = run_graph(settings, default_dry_script(),
                           resume_path=args.resume, location_preferences=locations,
-                          use_llm=args.llm)
+                          use_llm=args.llm, llm_provider=provider, search_mode=args.search)
     except (OSError, ValueError) as e:  # missing file, bad format, empty PDF
         print(f"Resume error: {e}", file=sys.stderr)
         return 2
     except ConfigError as e:  # e.g. GOOGLE_API_KEY missing
         print(f"Configuration error: {e}", file=sys.stderr)
         return 2
+    print(f"provider: {PROVIDERS[state['llm_provider']]}")
     print(f"resume_text (first 200 chars): {state['resume_text'][:200]!r}")
     if state["profile"]:
         print(f"profile: {state['profile'].model_dump_json(indent=2)}")
+    for key, next_page in state.get("search_pages", {}).items():
+        print(f"search: {key} (pages read: {next_page - 1})")
+    print_offers(state["offers"])
     for error in state["errors"]:
         print(f"error: {error}", file=sys.stderr)
     print(f"stop_reason={state['stop_reason']} steps={state['steps']} "

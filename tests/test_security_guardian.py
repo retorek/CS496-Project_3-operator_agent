@@ -79,9 +79,9 @@ def test_security_gemini_initializes_from_dotenv_without_openai(tmp_path, monkey
     settings = Settings(_env_file=env_file)
     assert settings.openai_api_key is None
     assert settings.google_api_key == "test-key-not-real"
-    monkeypatch.setattr(llm, "get_model_spec", lambda stage: ModelSpec(
-        provider="google_genai", model="gemini-3.5-flash-lite", temperature=0.0))
-    model = llm.get_chat_model("security", settings)
+    monkeypatch.setattr(llm, "get_model_spec", lambda stage, provider: ModelSpec(
+        model="gemini-3.5-flash-lite"))
+    model = llm.get_chat_model("security", settings, "google_genai")
     assert model.__class__.__name__ == "ChatGoogleGenerativeAI"
     assert model.with_structured_output(SecurityVerdict.model_json_schema()) is not None
 
@@ -91,12 +91,30 @@ def test_security_can_switch_to_openai_configuration_without_api_call(monkeypatc
     from core import llm
 
     # Simulate changing only the security entry in models.yaml; do not edit it in a test.
-    monkeypatch.setattr(llm, "get_model_spec", lambda stage: ModelSpec(
-        provider="openai", model="gpt-4o-mini", temperature=0.0))
+    monkeypatch.setattr(llm, "get_model_spec", lambda stage, provider: ModelSpec(
+        model="gpt-4o-mini", temperature=0.0))
     settings = Settings(_env_file=None, openai_api_key="test-key-not-real", google_api_key=None)
-    model = llm.get_chat_model("security", settings)
+    model = llm.get_chat_model("security", settings, "openai")
     assert model.__class__.__name__ == "ChatOpenAI"
     assert model.with_structured_output(SecurityVerdict.model_json_schema()) is not None
+
+
+@pytest.mark.parametrize("provider", ["openai", "google_genai"])
+def test_guardian_uses_run_provider(monkeypatch, provider):
+    from unittest.mock import Mock
+    from core import config, llm
+
+    item = offer()
+    # A run selection overrides the default provider, without invoking a real model.
+    monkeypatch.setattr(config, "get_settings", lambda **kwargs: config.Settings(
+        _env_file=None, llm_provider="openai"))
+    model = Mock()
+    model.with_structured_output.return_value = FakeClassifier(dict(offer_id=item.id, safe=True))
+    factory = Mock(return_value=model)
+    monkeypatch.setattr(llm, "get_chat_model", factory)
+    assert analyze_offer(item, provider=provider).safe
+    assert factory.call_args.args[0] == "security"
+    assert factory.call_args.args[2] == provider
 
 
 @pytest.mark.parametrize("provider", ["gemini", "openai"])

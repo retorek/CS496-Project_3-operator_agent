@@ -16,13 +16,14 @@ def test_security_to_ranking_preserves_history_and_blocks_errors(monkeypatch):
 
     def classify(offer, **kwargs):
         assert kwargs["dry_run"] is False
+        assert kwargs["provider"] == "google_genai"
         if offer.id == offers[2].id:
             raise RuntimeError("Classifier unavailable")
         return SecurityVerdict(offer_id=offer.id, safe=offer.id == offers[0].id,
                                reasons=[] if offer.id == offers[0].id else ["Suspicious offer"])
 
     monkeypatch.setattr(S4_security, "analyze_offer", classify)
-    state = {"offers": offers}
+    state = {"offers": offers, "llm_provider": "google_genai"}
     state.update(S4_security.node(state))
     result = _guarded("rank", S5_rank.node, settings())(state)
     assert state["offers"] == offers

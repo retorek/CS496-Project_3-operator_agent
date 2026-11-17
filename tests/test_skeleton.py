@@ -51,7 +51,8 @@ def test_missing_key_is_error_unless_dry(monkeypatch):
 def test_models_yaml_has_every_model_stage():
     cfg = load_model_config()
     assert set(cfg) == {"profile", "find_offers", "security", "rank", "cover_letter"}
-    assert get_model_spec("rank").temperature == 0.0
+    assert all(set(by_provider) == {"openai", "google_genai"} for by_provider in cfg.values())
+    assert get_model_spec("rank", "openai").temperature == 0.0
 
 
 # --- graph ---

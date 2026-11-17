@@ -6,7 +6,7 @@ from services.security.prompts import offer_messages
 
 
 def analyze_offer(offer: Offer, classifier=None, *, dry_run: bool = False,
-                  on_tokens=None) -> SecurityVerdict:
+                  on_tokens=None, provider: str | None = None) -> SecurityVerdict:
     """Return a verdict; optionally report actual token totals via on_tokens(count).
 
     Injected classifiers expose invoke(messages). Missing usage is not estimated.
@@ -27,7 +27,8 @@ def analyze_offer(offer: Offer, classifier=None, *, dry_run: bool = False,
             from core.config import get_settings
             from core.llm import get_chat_model
 
-            classifier = get_chat_model("security", get_settings(dry=True)).with_structured_output(
+            settings = get_settings(dry=True)
+            classifier = get_chat_model("security", settings, provider or settings.llm_provider).with_structured_output(
                 SecurityVerdict.model_json_schema(), include_raw=True
             )
 

@@ -14,7 +14,7 @@ def node(state: dict) -> dict:
     for offer in state.get("offers", []):
         try:
             verdict = analyze_offer(offer, dry_run=state.get("security_dry_run", False),
-                                    on_tokens=add_tokens)
+                                    on_tokens=add_tokens, provider=state.get("llm_provider"))
             if not isinstance(verdict, SecurityVerdict) or verdict.offer_id != offer.id:
                 raise ValueError("Invalid security verdict")
             if verdict.safe is True and not verdict.reasons:
