@@ -23,7 +23,7 @@ def test_security_to_ranking_preserves_history_and_blocks_errors(monkeypatch):
                                reasons=[] if offer.id == offers[0].id else ["Suspicious offer"])
 
     monkeypatch.setattr(S4_security, "analyze_offer", classify)
-    state = {"offers": offers, "llm_provider": "google_genai"}
+    state = {"offers": offers, "llm_provider": "google_genai", "rank_dry_run": True}
     state.update(S4_security.node(state))
     result = _guarded("rank", S5_rank.node, settings())(state)
     assert state["offers"] == offers

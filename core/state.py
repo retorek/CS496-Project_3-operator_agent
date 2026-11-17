@@ -23,6 +23,8 @@ class WorkflowState(TypedDict, total=False):
     security_dry_run: bool                # demo: deterministic checks without an LLM
     quarantined: list[SecurityVerdict]    # stage 4: flagged offers
     ranked: list[RankedOffer]             # stage 5
+    rank_dry_run: bool                    # stage 5: example scores without model calls
+    shown_offer_ids: list[str]            # stage 6: retain shown IDs when ranking order changes
     batch_cursor: int                     # stage 6: next index in `ranked`
     current_batch: list[RankedOffer]      # stage 6
     selected_offer_ids: list[str]         # stage 7: queue of offers to apply to
@@ -43,10 +45,12 @@ class WorkflowState(TypedDict, total=False):
 def initial_state(review_enabled: bool = True, resume_path: str = "",
                   location_preferences: list[str] | None = None,
                   use_llm: bool = False, llm_provider: str = "openai",
-                  search_mode: str = "stub", security_dry_run: bool = False) -> WorkflowState:
+                  search_mode: str = "stub", security_dry_run: bool = False,
+                  rank_dry_run: bool = False) -> WorkflowState:
     return WorkflowState(
         resume_path=resume_path, resume_text="",
         safe_offers=[], security_dry_run=security_dry_run,
+        rank_dry_run=rank_dry_run, shown_offer_ids=[],
         location_preferences=location_preferences or [], use_llm=use_llm,
         llm_provider=llm_provider, profile=None, search_mode=search_mode, search_pages={},
         offers=[], quarantined=[], ranked=[],

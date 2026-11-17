@@ -58,17 +58,18 @@ def run_graph(settings: Settings, user: ScriptedUser, review_enabled: bool = Tru
               thread_id: str | None = None, resume_path: str = "",
               location_preferences: list[str] | None = None, use_llm: bool = False,
               llm_provider: str | None = None, search_mode: str = "stub",
-              security_dry_run: bool = True) -> dict:
+              security_dry_run: bool = True, rank_dry_run: bool = True) -> dict:
     """Run to the end, answering each interrupt with `user`. Returns the final state.
     `llm_provider` defaults to LLM_PROVIDER in .env.
-    Security uses deterministic demo checks unless security_dry_run=False."""
+    Security and ranking use offline demo modes unless their dry-run flags are False."""
     graph = build_graph(settings)
     config = {"configurable": {"thread_id": thread_id or str(uuid.uuid4())},
               # LangGraph's own cap must stay above our max_steps so ours triggers first.
               "recursion_limit": settings.max_steps + 20}
     start = initial_state(review_enabled, resume_path, location_preferences, use_llm,
                           llm_provider=llm_provider or settings.llm_provider,
-                          search_mode=search_mode, security_dry_run=security_dry_run)
+                          search_mode=search_mode, security_dry_run=security_dry_run,
+                          rank_dry_run=rank_dry_run)
     result = graph.invoke(start, config)
     while result.get("__interrupt__"):
         payload = result["__interrupt__"][0].value
