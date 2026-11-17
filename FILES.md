@@ -11,7 +11,8 @@
 │   ├── scraping/
 │   ├── mailer/
 │   └── tracker/
-├── data/samples/   sample resumes and offers
+├── data/samples/   sample resumes and offers (mock data)
+├── data/uploads/   resumes uploaded from the web page (git-ignored)
 ├── eval/           evaluation scenarios
 ├── tests/          automated tests
 └── legacy/         old draft, kept for reference
@@ -30,6 +31,7 @@
 | `services/mailer/` | Sending the application and cover letter to the test inbox. |
 | `services/tracker/` | SQLite tracker of each offer's status. |
 | `data/samples/` | Sample resumes and offers (two offers contain injection text) used for demos and tests. |
+| `data/uploads/` | Resumes uploaded from the web page, saved under random names. Git-ignored (personal data). |
 | `eval/` | Scenarios and scoring scripts to evaluate the assistant. |
 | `tests/` | pytest tests. |
 | `legacy/` | Earlier prototype. Not used by the current code. |
@@ -42,36 +44,41 @@
 | `FILES.md` | This file: layout and purpose of each file. |
 | `requirements.txt` | Python dependencies. |
 | `.env.example` | Template for `.env` (keys, mail server, limits). `.env` itself is git-ignored. |
-| `.gitignore` | Files kept out of git (secrets, caches, databases, logs, local notes). |
+| `.gitignore` | Files kept out of git (secrets, caches, databases, logs, local notes, uploaded resumes). |
+| `.streamlit/config.toml` | Streamlit settings: maximum upload size (5 MB). |
 | `pytest.ini` | pytest settings. |
 
 ## `app/`
 
 | File | Intended use |
 |---|---|
-| `main.py` | Streamlit entry point. Currently placeholder pages. |
+| `main.py` | Streamlit entry point: sidebar and page selection. Pages after the profile are placeholders. |
+| `upload_page.py` | Resume & profile page: upload form, runs the graph up to the first pause, shows the profile or a clear error. |
+| `uploads.py` | Checks an uploaded file (PDF/TXT only, max 5 MB, real content) and saves it under a random name in `data/uploads/`. |
 
 ## `core/`
 
 | File | Intended use |
 |---|---|
-| `config.py` | Loads settings from `.env` and the per-step models from `config/models.yaml`. Raises a clear error if the OpenAI key is missing (not in dry mode). |
+| `config.py` | Loads settings from `.env` (keys, limits, model timeout and retries) and the per-step models from `config/models.yaml`. Raises a clear error if the OpenAI key is missing (not in dry mode). |
+| `llm.py` | Builds the chat model for a step from `config/models.yaml` (provider + model), with the timeout and retry limits. Clear error if that provider's key is missing. |
+| `resume_reader.py` | Reads a resume file (`.pdf` with pypdf, or `.txt`) and returns its text. Clear errors for other formats, damaged or scanned PDFs. |
 | `models.py` | Shared data models: Profile, Offer, SecurityVerdict, RankedOffer, OfferStatus, Application, TrackerEntry. |
-| `state.py` | The workflow state passed between steps. |
+| `state.py` | The workflow state passed between steps. Inputs set at the start: `resume_path`, `location_preferences`, `use_llm`. |
 | `samples.py` | Loads the sample resumes and offers for the stubs. |
 
 ## `config/`
 
 | File | Intended use |
 |---|---|
-| `models.yaml` | Model name and temperature for each step that calls a model. |
+| `models.yaml` | Provider (`openai` by default, or `google_genai`), model name and temperature for each step that calls a model. |
 
 ## `graph/`
 
 | File | Intended use |
 |---|---|
 | `graph.py` | Wires the 10 steps with their branches and loops, pauses for the user (stages 7 and 9), and enforces the limits and stop reasons. |
-| `run.py` | Command line entry point. `--dry` runs the whole graph on sample data with a scripted user and no keys. |
+| `run.py` | Command line entry point. `--dry` runs the whole graph on sample data with a scripted user and no keys; `--resume`, `--locations` and `--llm` feed a real resume to the profile step. |
 
 ## `graph/nodes/`
 
@@ -79,8 +86,8 @@ Files are named `S<stage number>_<name>.py`. Each exposes `node(state) -> dict`,
 
 | File | Step |
 |---|---|
-| `S1_upload.py` | 1. Read the uploaded resume. |
-| `S2_profile.py` | 2. Build a structured profile. |
+| `S1_upload.py` | 1. Read the resume at `resume_path` (sample resume if empty). |
+| `S2_profile.py` | 2. Build a structured profile with the model (or a fixed one without `use_llm`); copies the user's locations. Stops with `llm_error` if the model fails. |
 | `S3_find_offers.py` | 3. Find new offers, skipping those already seen. |
 | `S4_security.py` | 4. Quarantine unsafe offers. |
 | `S5_rank.py` | 5. Score and rank safe offers. |

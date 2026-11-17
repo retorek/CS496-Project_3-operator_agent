@@ -2,12 +2,16 @@
 from pathlib import Path
 
 from pypdf import PdfReader
+from pypdf.errors import PyPdfError
 
 
 def read_pdf(path: Path) -> str:
     """Join the text of every page, one blank line between pages."""
-    reader = PdfReader(path)
-    pages = [page.extract_text() or "" for page in reader.pages]
+    try:
+        reader = PdfReader(path)
+        pages = [page.extract_text() or "" for page in reader.pages]
+    except PyPdfError as e:  # damaged or encrypted PDF
+        raise ValueError(f"Could not read this PDF ({e}).") from e
     return "\n\n".join(pages).strip()
 
 

@@ -6,3 +6,5 @@ __pycache__/
 *.log
 logs/
 CLAUDE.md
+# Uploaded resumes (personal data, never commit)
+data/uploads/

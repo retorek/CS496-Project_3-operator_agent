@@ -34,23 +34,69 @@ pip install -r requirements.txt
 copy .env.example .env            # Linux/macOS: cp .env.example .env
 ```
 
-Fill in `.env` with your keys (not needed for the demo run). Settings include the OpenAI
-and LangSmith keys, the mail server and test inbox, the batch size, and the three limits.
+Fill in `.env` with your keys (not needed for the demo run). Settings include the OpenAI,
+Google and LangSmith keys, the mail server and test inbox, the batch size, the three limits,
+and the model call timeout and retries (`LLM_TIMEOUT`, `LLM_MAX_RETRIES`).
+
+While testing, the profile step uses a free Gemini key (`GOOGLE_API_KEY`, from Google AI
+Studio) so the OpenAI credit is not used up. OpenAI stays the default for every other step.
 
 ## Usage
 
+### Web interface
+
 ```bash
-python -m graph.run --dry         # full run with sample data, no API keys
-streamlit run app/main.py         # web interface
-python -m pytest -q               # tests
+streamlit run app/main.py
 ```
 
-Which model is used for each step is set in `config/models.yaml`.
+Opens at http://localhost:8501. On the **Resume & profile** page:
+
+1. Choose your resume (PDF or TXT, max 5 MB).
+2. Type where you want to work, separated by commas (e.g. `Lyon, Remote`).
+3. Keep **Use the real model** checked to build the profile with the model from
+   `config/models.yaml` (needs its API key), or uncheck it to get a fixed sample profile.
+4. Click **Build my profile**.
+
+Uploaded files are checked (type, size, real content) and saved under a random name in
+`data/uploads/`, which is git-ignored. Errors (wrong file, unreadable PDF, missing key, model
+busy) are shown on the page; unexpected errors are logged in the terminal running Streamlit.
+
+### Command line
+
+```bash
+python -m graph.run --dry                       # full run with sample data, no API keys
+python -m graph.run --dry --resume data/samples/resume_bob.txt --locations "Lyon, Remote"
+python -m graph.run --dry --llm --resume my_cv.pdf --locations "Lyon, Remote"
+```
+
+| Flag | Meaning |
+|---|---|
+| `--dry` | Every step uses sample data; a scripted user answers the pauses. |
+| `--resume PATH` | Resume to read (`.pdf` or `.txt`). Default: a sample resume. |
+| `--locations "A, B"` | Where the user wants to work. |
+| `--llm` | The profile step calls its real model (needs its key in `.env`). |
+
+It prints the start of the resume text, the profile, any errors, and the stop reason.
+
+### Tests
+
+```bash
+python -m pytest -q
+```
+
+### Models
+
+Which model each step uses is set in `config/models.yaml`, with an optional `provider`
+(`openai` by default, or `google_genai` for Gemini). Switching provider needs no code change.
 
 ## Project status
 
-The structure and the flow are in place, but each step still returns sample data, and the web
-page is a placeholder. See [FILES.md](FILES.md) for the folder layout and what each file is for.
+- **Done:** steps 1 and 2. A PDF or TXT resume is read and turned into a profile by the model,
+  from the web page or the command line. If the model fails, the run stops with
+  `stop_reason="llm_error"` and the error is shown.
+- **Still sample data:** steps 3 to 10, and the other web pages are placeholders.
+
+See [FILES.md](FILES.md) for the folder layout and what each file is for.
 
 ## Tech
 

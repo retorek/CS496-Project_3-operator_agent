@@ -1,0 +1,3 @@
+[server]
+# Same limit as app/uploads.py (MB): Streamlit refuses bigger files itself.
+maxUploadSize = 5
