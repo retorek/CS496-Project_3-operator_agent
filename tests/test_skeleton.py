@@ -105,6 +105,6 @@ def test_graph_pauses_at_user_decision():
     g = graph_module.build_graph(settings())
     cfg = {"configurable": {"thread_id": "t"}}
     from core.state import initial_state
-    out = g.invoke(initial_state(), cfg)
+    out = g.invoke(initial_state(security_dry_run=True), cfg)
     assert out["__interrupt__"][0].value["stage"] == "user_decides"
     assert Command  # resume path is exercised by run_graph tests

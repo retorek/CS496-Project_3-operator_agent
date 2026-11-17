@@ -16,6 +16,8 @@ class WorkflowState(TypedDict, total=False):
     use_llm: bool                         # stage 2 calls its real model (else stub)
     profile: Profile | None               # stage 2
     offers: list[Offer]                   # stage 3: all offers scraped so far
+    safe_offers: list[Offer]              # stage 4: explicitly approved for ranking
+    security_dry_run: bool                # demo: deterministic checks without an LLM
     quarantined: list[SecurityVerdict]    # stage 4: flagged offers
     ranked: list[RankedOffer]             # stage 5
     batch_cursor: int                     # stage 6: next index in `ranked`
@@ -37,9 +39,10 @@ class WorkflowState(TypedDict, total=False):
 
 def initial_state(review_enabled: bool = True, resume_path: str = "",
                   location_preferences: list[str] | None = None,
-                  use_llm: bool = False) -> WorkflowState:
+                  use_llm: bool = False, security_dry_run: bool = False) -> WorkflowState:
     return WorkflowState(
         resume_path=resume_path, resume_text="",
+        safe_offers=[], security_dry_run=security_dry_run,
         location_preferences=location_preferences or [], use_llm=use_llm, profile=None, offers=[], quarantined=[], ranked=[],
         batch_cursor=0, current_batch=[], selected_offer_ids=[], next_action="", route="",
         current_offer=None, cover_letters={}, review_enabled=review_enabled,

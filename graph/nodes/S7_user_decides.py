@@ -20,8 +20,11 @@ def node(state: dict) -> dict:
         })
         queue = list(decision.get("selected", []))
         action = decision.get("action", "done")
+    action = action if action in {"next", "find_others", "done"} else "done"
+    blocked = {v.offer_id for v in state.get("quarantined", [])}
+    by_id = {o.id: o for o in state.get("safe_offers", []) if o.id not in blocked}
+    queue = [offer_id for offer_id in queue if offer_id in by_id]
     if queue:
-        by_id = {o.id: o for o in state.get("offers", [])}
         return {"selected_offer_ids": queue[1:], "current_offer": by_id[queue[0]],
                 "next_action": action, "route": "apply"}
-    return {"selected_offer_ids": [], "current_offer": None, "next_action": "", "route": action}
+    return {"selected_offer_ids": [], "current_offer": None, "next_action": "", "route": action or "done"}

@@ -52,13 +52,15 @@ def default_dry_script() -> ScriptedUser:
 
 def run_graph(settings: Settings, user: ScriptedUser, review_enabled: bool = True,
               thread_id: str | None = None, resume_path: str = "",
-              location_preferences: list[str] | None = None, use_llm: bool = False) -> dict:
-    """Run to the end, answering each interrupt with `user`. Returns the final state."""
+              location_preferences: list[str] | None = None, use_llm: bool = False,
+              security_dry_run: bool = True) -> dict:
+    """Run the scripted demo; set security_dry_run=False for live security checks."""
     graph = build_graph(settings)
     config = {"configurable": {"thread_id": thread_id or str(uuid.uuid4())},
               # LangGraph's own cap must stay above our max_steps so ours triggers first.
               "recursion_limit": settings.max_steps + 20}
-    start = initial_state(review_enabled, resume_path, location_preferences, use_llm)
+    start = initial_state(review_enabled, resume_path, location_preferences, use_llm,
+                          security_dry_run=security_dry_run)
     result = graph.invoke(start, config)
     while result.get("__interrupt__"):
         payload = result["__interrupt__"][0].value

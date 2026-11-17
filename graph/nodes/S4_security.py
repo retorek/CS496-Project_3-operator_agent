@@ -1,19 +1,31 @@
-"""Stage 4 - Security check."""
-import re
-
+"""Stage 4 - Screen offers while preserving discovery history."""
 from core.models import SecurityVerdict
-
-# Stub heuristic only. The real stage must treat offer text as untrusted data.
-_SUSPICIOUS = re.compile(r"ignore (all )?previous instructions|passport|bank details|password", re.I)
+from services.security.guardian import analyze_offer
 
 
 def node(state: dict) -> dict:
-    """Input: `offers`.
-    Output: `quarantined` (verdicts for flagged offers). Safe offers stay in `offers`.
-    Will: detect prompt injection, suspicious links and personal-data requests.
-    Stub: keyword match on the description."""
-    flagged = [
-        SecurityVerdict(offer_id=o.id, safe=False, reasons=["suspicious keyword (stub)"])
-        for o in state.get("offers", []) if _SUSPICIOUS.search(o.description)
-    ]
-    return {"quarantined": flagged}
+    safe_offers, quarantined = [], []
+    tokens_used = state.get("tokens_used", 0)
+
+    def add_tokens(count: int) -> None:
+        nonlocal tokens_used
+        tokens_used += count
+
+    for offer in state.get("offers", []):
+        try:
+            verdict = analyze_offer(offer, dry_run=state.get("security_dry_run", False),
+                                    on_tokens=add_tokens)
+            if not isinstance(verdict, SecurityVerdict) or verdict.offer_id != offer.id:
+                raise ValueError("Invalid security verdict")
+            if verdict.safe is True and not verdict.reasons:
+                safe_offers.append(offer)
+                continue
+            verdict = SecurityVerdict(offer_id=offer.id, safe=False,
+                                      reasons=verdict.reasons or ["Security rejected this offer."])
+        except Exception:
+            verdict = SecurityVerdict(offer_id=offer.id, safe=False,
+                                      reasons=["CLASSIFICATION_ERROR: Security classification failed."])
+        quarantined.append(verdict)
+    blocked = {verdict.offer_id for verdict in quarantined}
+    return {"safe_offers": [offer for offer in safe_offers if offer.id not in blocked],
+            "quarantined": quarantined, "tokens_used": tokens_used}

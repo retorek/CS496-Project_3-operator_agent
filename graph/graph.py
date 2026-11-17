@@ -39,7 +39,9 @@ def _guarded(name: str, fn, settings: Settings):
         if name == "apply" and state.get("applications_sent", 0) >= settings.max_applications:
             return {"steps": steps, "stop_reason": "max_applications"}
 
-        out = {**fn(state), "steps": steps}
+        # Adapt input for Agent 4 without changing its code or discovery history.
+        node_state = {**state, "offers": state.get("safe_offers", [])} if name == "rank" else state
+        out = {**fn(node_state), "steps": steps}
         if out.get("tokens_used", 0) >= settings.max_tokens:
             out["stop_reason"] = "token_budget"
         if name == "apply" and out["applications_sent"] >= settings.max_applications:
