@@ -8,6 +8,7 @@ send anything; real delivery (to the test inbox) needs dry_run=False and a serve
 import smtplib
 from email.message import EmailMessage
 
+from core import log
 from core.models import Offer, Profile
 
 
@@ -57,6 +58,7 @@ def send_application(profile: Profile | None, offer: Offer, letter: str, dry_run
     record = {"to": msg["To"], "subject": msg["Subject"], "offer_id": offer.id,
               "dry_run": bool(dry_run), "sent": False}
     if dry_run:
+        log.system(f"email prepared for {msg['To']} (test mode: not sent)")
         return record
     try:
         if smtp is not None:
@@ -64,10 +66,16 @@ def send_application(profile: Profile | None, offer: Offer, letter: str, dry_run
         else:
             with smtplib.SMTP(settings.smtp_host, settings.smtp_port,
                               timeout=settings.llm_timeout) as server:
+                server.ehlo()
+                if server.has_extn("starttls"):  # Gmail (port 587) requires encryption
+                    server.starttls()
+                    server.ehlo()
                 if settings.smtp_user and settings.smtp_password:
                     server.login(settings.smtp_user, settings.smtp_password)
                 server.send_message(msg)
     except (OSError, smtplib.SMTPException) as exc:
+        log.system(f"email to {msg['To']} failed ({type(exc).__name__})")
         raise MailerError(f"SMTP send failed: {exc}") from exc
+    log.system(f"email sent to {msg['To']} through {settings.smtp_host}")
     record["sent"] = True
     return record

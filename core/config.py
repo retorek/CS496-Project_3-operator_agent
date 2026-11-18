@@ -30,12 +30,14 @@ class Settings(BaseSettings):
     smtp_user: str | None = None
     smtp_password: str | None = None
     test_inbox: str = "test-inbox@example.com"
+    send_emails: bool = False  # web page: really email the test inbox (else only prepare)
     batch_size: int = 3
     max_applications: int = 3
     max_steps: int = 50
     max_tokens: int = 200_000
     llm_timeout: int = 60       # seconds per model call
     llm_max_retries: int = 2    # retries on overload/timeout, then the stage fails
+    llm_requests_per_minute: int = 12  # all stages together; Gemini's free tier allows few
     llm_provider: Literal["openai", "google_genai"] = "openai"  # default choice for a new run
     # Stage 3 (find offers)
     scrape_delay: float = 1.0       # seconds between two requests to the same site
@@ -48,6 +50,11 @@ class Settings(BaseSettings):
     @classmethod
     def _empty_is_none(cls, v):
         return v or None
+
+    @field_validator("smtp_password")
+    @classmethod
+    def _no_spaces(cls, v):
+        return v.replace(" ", "") if v else v  # Gmail shows App Passwords as 4 groups of 4
 
 
 def key_status(settings: Settings) -> dict[str, bool]:

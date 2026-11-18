@@ -10,8 +10,10 @@ Stages 7 and 9 pause with `interrupt`, so a checkpointer is required.
 """
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+from langgraph.errors import GraphInterrupt
 from langgraph.graph import END, START, StateGraph
 
+from core import log
 from core.config import Settings
 from core.state import WorkflowState
 from graph.nodes import (S1_upload as upload, S2_profile as profile,
@@ -31,6 +33,15 @@ def _guarded(name: str, fn, settings: Settings):
     """Wrap a node: count steps and enforce the global limits (never left to prompts)."""
 
     def run(state: WorkflowState) -> dict:
+        try:
+            out = _limited(state)
+        except GraphInterrupt:  # stages 7 and 9 pause here; they run again once answered
+            log.system(f"stage {name} paused, waiting for the user")
+            raise
+        log.system(f"stage {name}: {_summary(out)}")
+        return out
+
+    def _limited(state: WorkflowState) -> dict:
         steps = state.get("steps", 0) + 1
         if steps > settings.max_steps:
             return {"steps": steps, "stop_reason": "max_steps"}
@@ -39,6 +50,7 @@ def _guarded(name: str, fn, settings: Settings):
         if name == "apply" and state.get("applications_sent", 0) >= settings.max_applications:
             return {"steps": steps, "stop_reason": "max_applications"}
 
+        log.system(f"stage {name} started")
         # Adapt input for Agent 4 without changing its code or discovery history.
         node_state = {**state, "offers": state.get("safe_offers", [])} if name == "rank" else state
         out = {**fn(node_state), "steps": steps}
@@ -51,6 +63,17 @@ def _guarded(name: str, fn, settings: Settings):
         return out
 
     return run
+
+
+def _summary(out: dict) -> str:
+    """Short view of a stage's result: list sizes and small values, never long text."""
+    parts = []
+    for key, value in out.items():
+        if isinstance(value, (list, dict)):
+            parts.append(f"{key}={len(value)}")
+        elif isinstance(value, (bool, int)) or (isinstance(value, str) and len(value) <= 30):
+            parts.append(f"{key}={value}")
+    return ", ".join(parts)
 
 
 def _then(target: str):

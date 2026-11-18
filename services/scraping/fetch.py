@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 import requests
 
+from core import log
 from core.config import get_settings
 
 # Only these hosts can be fetched. A link inside a page cannot send the scraper anywhere else.
@@ -44,8 +45,10 @@ def _get(url: str) -> requests.Response:
         resp = requests.get(url, headers={"User-Agent": USER_AGENT},
                             timeout=settings.scrape_timeout)
     except requests.RequestException as e:
+        log.system(f"web request {url} -> failed ({type(e).__name__})")
         raise ScrapeError(f"{type(e).__name__} on {url}") from e
     _check_host(resp.url)  # after redirects
+    log.system(f"web request {url} -> HTTP {resp.status_code}")
     if resp.status_code == 404:
         raise PageNotFound(f"HTTP 404 on {url}")
     if resp.status_code != 200:

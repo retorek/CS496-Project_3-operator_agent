@@ -15,10 +15,11 @@ def score_color(score: int) -> str:
     return "green" if score >= 70 else "orange" if score >= 40 else "red"
 
 
-def offer_box(offer, ranked=None, position: int = 0) -> None:
+def offer_box(offer, ranked=None, position: int = 0):
     """One offer in a bordered card. With `ranked`: position, score, bar and reason.
-    The description stays hidden until clicked."""
-    with st.container(border=True):
+    The description stays hidden until clicked. Returns the card, to add more inside it."""
+    card = st.container(border=True)
+    with card:
         info, score_col = st.columns([5, 1])
         with info:
             prefix = f"{position}. " if position else ""
@@ -35,6 +36,7 @@ def offer_box(offer, ranked=None, position: int = 0) -> None:
         if offer.description:
             with st.expander("Description"):
                 st.text(offer.description)  # plain text: nothing in it is rendered
+    return card
 
 
 def blocked_section(state: dict) -> None:

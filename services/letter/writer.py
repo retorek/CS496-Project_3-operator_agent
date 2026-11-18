@@ -84,4 +84,5 @@ def write_letter(profile: Profile, offer: Offer, provider: str | None = None,
                   "Rewrite the letter without them:"] + [f"- {c}" for c in feedback]
     message = model.invoke([("system", WRITER_SYSTEM), ("human", "\n\n".join(parts))])
     usage = getattr(message, "usage_metadata", None) or {}
-    return _strip_fences(str(message.content or "")), int(usage.get("total_tokens", 0) or 0)
+    # .text joins the text blocks: Gemini 3 returns a list of blocks (with signatures), not a string
+    return _strip_fences(message.text or ""), int(usage.get("total_tokens", 0) or 0)

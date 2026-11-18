@@ -6,6 +6,7 @@ from collections import Counter
 
 from langgraph.types import Command
 
+from core import log
 from core.config import PROVIDERS, ConfigError, Settings, get_settings
 from core.state import initial_state
 from graph.graph import build_graph
@@ -73,7 +74,9 @@ def run_graph(settings: Settings, user: ScriptedUser, review_enabled: bool = Tru
     result = graph.invoke(start, config)
     while result.get("__interrupt__"):
         payload = result["__interrupt__"][0].value
-        result = graph.invoke(Command(resume=user.answer(payload)), config)
+        answer = user.answer(payload)
+        log.user(f"(scripted) {payload['stage']}: {answer}")
+        result = graph.invoke(Command(resume=answer), config)
     return graph.get_state(config).values
 
 

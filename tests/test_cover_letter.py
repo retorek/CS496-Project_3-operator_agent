@@ -33,7 +33,7 @@ class FakeModel:
         self.calls.append(messages)
         content = self.contents[min(self.i, len(self.contents) - 1)]
         self.i += 1
-        return types.SimpleNamespace(content=content, usage_metadata={"total_tokens": self.tokens})
+        return types.SimpleNamespace(content=content, text=content, usage_metadata={"total_tokens": self.tokens})
 
 
 class FakeChecker:

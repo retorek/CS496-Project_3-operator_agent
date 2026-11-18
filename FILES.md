@@ -52,10 +52,12 @@
 
 | File | Intended use |
 |---|---|
-| `main.py` | Streamlit entry point: title, provider picker (top right), sidebar and page selection. Pages after Offers are placeholders. |
+| `main.py` | Streamlit entry point: title, provider picker (top right), sidebar pages (Resume & profile, Offers, Decisions, Review, Tracker); opens the page of the workflow's next pause. |
+| `workflow.py` | Keeps one graph run per browser session: `start()` runs to the first pause, `resume(answer)` answers a pause and runs to the next one, `reset()` clears it. |
+| `workflow_pages.py` | Decisions (Apply / Decline / Dismiss per offer, then next / find others / done), Review (letter, fact check, confirm / rewrite / cancel) and Tracker (counts and applications of this session). |
 | `offers_view.py` | Ranked offers, best match first, each in a card (position, title, company, location, match score coloured green/orange/red with a bar, the reason for the score, source, URL, description hidden until clicked). If ranking failed, the safe offers in the order found; offers blocked by the security check in a separate closed section with the reasons; searches that failed. Text from job sites is escaped or shown as plain text, so it cannot add links or formatting. |
 | `provider_picker.py` | OpenAI / Gemini choice with key status (set or missing in `.env`). Locked while a run exists; **Start over** clears the run. |
-| `upload_page.py` | Resume & profile page: upload form (resume, locations, real model or not, how to find offers), runs the graph up to the first pause, shows the profile (closed until clicked) and the offers, or a clear error. |
+| `upload_page.py` | Resume & profile page: upload form (resume, locations, real model or not, how to find offers), starts the run (up to the first pause), shows the profile (closed until clicked) and the offers, or a clear error. |
 | `uploads.py` | Checks an uploaded file (PDF/TXT only, max 5 MB, real content) and saves it under a random name in `data/uploads/`. |
 
 ## `core/`
@@ -63,7 +65,8 @@
 | File | Intended use |
 |---|---|
 | `config.py` | Loads settings from `.env` (keys, default provider, limits, model timeout and retries) and the per-step, per-provider models from `config/models.yaml`. `key_status()` tells which provider keys are set. Raises a clear error if the chosen provider's key is missing (not in dry mode). |
-| `llm.py` | `get_chat_model(stage, settings, provider)`: builds the chat model for a step with the run's provider, with the timeout and retry limits. Clear error if that provider's key is missing. |
+| `llm.py` | `get_chat_model(stage, settings, provider)`: builds the chat model for a step with the run's provider, with the timeout and retry limits. Clear error if that provider's key is missing. Every model request, reply and failure is logged. |
+| `log.py` | Terminal log: `user()` and `system()` print one timestamped line tagged `[USER]` or `[SYSTEM]`. |
 | `resume_reader.py` | Reads a resume file (`.pdf` with pypdf, or `.txt`) and returns its text. Clear errors for other formats, damaged or scanned PDFs. |
 | `models.py` | Shared data models: Profile, Offer, SecurityVerdict, RankedOffer, OfferStatus, Application, TrackerEntry. |
 | `state.py` | The workflow state passed between steps. Inputs set at the start: `resume_path`, `location_preferences`, `use_llm`, `llm_provider` (used by every step that calls a model), `search_mode` (step 3). |
@@ -113,7 +116,7 @@ Files are named `S<stage number>_<name>.py`. Each exposes `node(state) -> dict`,
 
 | File | Intended use |
 |---|---|
-| `__init__.py` | Builds the application email (always to `test_inbox`, never the employer; headers reject line breaks) and sends it; `dry_run=True` composes without opening SMTP. |
+| `__init__.py` | Builds the application email (always to `test_inbox`, never the employer; headers reject line breaks) and sends it, with TLS when the server offers it (Gmail on port 587); `dry_run=True` composes without opening SMTP. The web page sends only when `SEND_EMAILS=true`. Each email is logged (prepared, sent or failed). |
 
 ### `services/tracker/` (Agent 6)
 
