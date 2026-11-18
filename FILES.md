@@ -95,13 +95,31 @@ Files are named `S<stage number>_<name>.py`. Each exposes `node(state) -> dict`,
 | `S5_rank.py` | 5. Score and rank safe offers. |
 | `S6_show_batch.py` | 6. Pick the next batch of offers to show. |
 | `S7_user_decides.py` | 7. Pause for the user's choices and the next action. |
-| `S8_cover_letter.py` | 8. Write a cover letter from resume facts. |
+| `S8_cover_letter.py` | 8. Write a cover letter from profile facts and fact-check it (Agent 5). |
 | `S9_review.py` | 9. Optional pause to confirm, edit or cancel. |
-| `S10_apply.py` | 10. Send the application to the test inbox and update the tracker. |
+| `S10_apply.py` | 10. Refuse unchecked letters, then email the application to the test inbox (dry run by default) and avoid duplicates (Agent 6). |
 
 ## `services/`
 
-`mailer/` and `tracker/` are empty packages (`__init__.py` only) for now.
+### `services/letter/` (Agent 5)
+
+| File | Intended use |
+|---|---|
+| `writer.py` | Writes the letter from the `Profile` only; offer fenced as `<untrusted_offer>`. `stub_letter` is the no-model version used in dry mode. |
+| `factcheck.py` | Splits the letter into claims and judges each against the profile (LLM), plus a deterministic number check the LLM cannot override. Fails closed. |
+| `__init__.py` | `write_verified_letter`: the write -> check -> retry loop, returning the letter and a `FactCheckReport`. |
+
+### `services/mailer/` (Agent 6)
+
+| File | Intended use |
+|---|---|
+| `__init__.py` | Builds the application email (always to `test_inbox`, never the employer; headers reject line breaks) and sends it; `dry_run=True` composes without opening SMTP. |
+
+### `services/tracker/` (Agent 6)
+
+| File | Intended use |
+|---|---|
+| `__init__.py` | `already_applied()` blocks duplicate submissions; `make_entry()` builds a `TrackerEntry`. In-memory for now (SQLite later). |
 
 ### `services/scraping/`
 

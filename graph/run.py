@@ -85,6 +85,26 @@ def print_offers(offers: list) -> None:
         print(f"  [{o.source}] {o.title[:70]} | {o.company[:30]} | {o.location[:40]}")
 
 
+def print_applications(state: dict) -> None:
+    """Stages 8-10: the cover letter, its fact check and the (dry-run) application."""
+    reports = state.get("cover_letter_reports", {})
+    for offer_id, letter in state.get("cover_letters", {}).items():
+        print(f"\n--- cover letter [{offer_id}] ---\n{letter}")
+        report = reports.get(offer_id)
+        if report is not None:
+            flags = report.get("unsupported") or []
+            print(f"fact check: passed={report.get('passed')} unsupported={len(flags)}")
+            for flag in flags:
+                print(f"  - {flag}")
+    dry = state.get("send_dry_run", True)
+    for app in state.get("applications", []):
+        if app.status.value == "applied":
+            how = "dry run, not actually emailed" if dry else "emailed to the test inbox"
+        else:
+            how = "no email"
+        print(f"application: offer={app.offer_id} status={app.status.value} ({how})")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Run the internship application graph.")
     parser.add_argument("--dry", action="store_true", help="stubs + scripted user, no API keys")
@@ -123,6 +143,7 @@ def main(argv=None) -> int:
     for key, next_page in state.get("search_pages", {}).items():
         print(f"search: {key} (pages read: {next_page - 1})")
     print_offers(state["offers"])
+    print_applications(state)
     for error in state["errors"]:
         print(f"error: {error}", file=sys.stderr)
     print(f"stop_reason={state['stop_reason']} steps={state['steps']} "

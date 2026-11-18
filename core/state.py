@@ -32,8 +32,10 @@ class WorkflowState(TypedDict, total=False):
     route: str                            # stage 7: where the graph goes next
     current_offer: Offer | None           # offer being processed in 8-10
     cover_letters: dict[str, str]         # stage 8: offer_id -> letter
+    cover_letter_reports: dict[str, dict]  # stage 8: offer_id -> fact-check report
     review_enabled: bool                  # stage 9 on/off
     review_decision: str                  # stage 9: "confirm" | "edit" | "cancel"
+    send_dry_run: bool                    # stage 10: build the mail but never send it
     applications: list[Application]       # stage 10
     applications_sent: int
     steps: int                            # global limit counters
@@ -46,7 +48,7 @@ def initial_state(review_enabled: bool = True, resume_path: str = "",
                   location_preferences: list[str] | None = None,
                   use_llm: bool = False, llm_provider: str = "openai",
                   search_mode: str = "stub", security_dry_run: bool = False,
-                  rank_dry_run: bool = False) -> WorkflowState:
+                  rank_dry_run: bool = False, send_dry_run: bool = True) -> WorkflowState:
     return WorkflowState(
         resume_path=resume_path, resume_text="",
         safe_offers=[], security_dry_run=security_dry_run,
@@ -55,7 +57,8 @@ def initial_state(review_enabled: bool = True, resume_path: str = "",
         llm_provider=llm_provider, profile=None, search_mode=search_mode, search_pages={},
         offers=[], quarantined=[], ranked=[],
         batch_cursor=0, current_batch=[], selected_offer_ids=[], next_action="", route="",
-        current_offer=None, cover_letters={}, review_enabled=review_enabled,
-        review_decision="", applications=[], applications_sent=0, steps=0,
+        current_offer=None, cover_letters={}, cover_letter_reports={},
+        review_enabled=review_enabled, review_decision="", send_dry_run=send_dry_run,
+        applications=[], applications_sent=0, steps=0,
         tokens_used=0, stop_reason=None, errors=[],
     )
